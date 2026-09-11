@@ -1,0 +1,6 @@
+1. До добавления URL:
+ModuleNotFoundError: No module named 'myremotemodule'
+
+2. Добавлен URL: http://localhost:8000
+Сервер недоступен: http://localhost:8000
+Ошибка обработана: ModuleNotFoundError: No module named 'myremotemodule'

@@ -47,7 +47,9 @@ class URLFinder(PathEntryFinder):
                     continue
                 response.raise_for_status()
             except requests.RequestException as error:
-                raise ImportError(f"Не удалось обратиться к серверу: {origin}") from error
+                raise ImportError(
+                    f"Не удалось обратиться к серверу: {origin}"
+                ) from error
             spec = spec_from_loader(
                 fullname, URLLoader(), origin=origin, is_package=is_package
             )
