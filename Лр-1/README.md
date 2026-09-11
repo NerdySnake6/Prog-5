@@ -3,7 +3,10 @@
 Автор: Игорь Калинин.
 
 Сделал импорт модуля по HTTP через `requests`, обработку недоступного
-сервера (*) и загрузку пакета (***). Проверил на локальном сервере и GitHub Raw.
+сервера (*) и загрузку пакета (***).
+
+Основной хостинг — [GitHub Pages](https://nerdysnake6.github.io/Prog-5/Лр-1/rootserver/).
+Модуль и пакет доступны по публичному HTTPS-адресу.
 
 ## Файлы
 
@@ -23,6 +26,37 @@ python3 -m venv .venv
 source .venv/bin/activate
 python3 -m pip install -r requirements.txt
 ```
+
+### Проверка с GitHub Pages
+
+Локальный сервер запускать не нужно:
+
+```bash
+python3 demo.py https://nerdysnake6.github.io/Prog-5/Лр-1/rootserver
+```
+
+Для ручной проверки запустить `python3 -i activation_script.py` и вводить
+команды по очереди:
+
+```python
+import myremotemodule  # ModuleNotFoundError: URL ещё не добавлен
+sys.path.append("https://nerdysnake6.github.io/Prog-5/Лр-1/rootserver")
+import myremotemodule
+myremotemodule.myfoo()
+import mypackage
+print(mypackage.hello())
+```
+
+Файлы публикуются из ветки `main`, из корня репозитория. Файл `.nojekyll`
+нужен, чтобы GitHub Pages отдавал исходные файлы, включая `__init__.py`.
+В каталоге `rootserver` есть страница со ссылками на модуль и файлы пакета.
+
+Проверка прошла: модуль, пакет и его подмодуль загружены именно с
+`nerdysnake6.github.io`. Вывод сохранён в `results/pages.txt`.
+
+![Импорт с GitHub Pages](screenshots/pages.png)
+
+### Локальная проверка из задания
 
 В первом терминале запустить сервер:
 
@@ -94,7 +128,7 @@ python3 demo.py http://localhost:8000 --unavailable
 
 ## 3. Загрузка пакета (***)
 
-При запущенном сервере в интерактивном режиме после добавления URL:
+В интерактивном режиме после добавления URL GitHub Pages:
 
 ```python
 import mypackage
@@ -103,7 +137,7 @@ print(mypackage.__path__)
 ```
 
 Результат — `Пакет и его подмодуль загружены по HTTP`.
-Это также проверяется в `demo.py` и видно на первом и втором скриншотах.
+Это также проверяется в `demo.py` при загрузке с любого из указанных хостингов.
 
 Для `__init__.py` в `spec_from_loader` передаётся `is_package=True`.
 В `spec.submodule_search_locations` записывается URL каталога пакета.
@@ -114,7 +148,7 @@ print(mypackage.__path__)
 
 ## Результат
 
-Модуль и пакет загрузились с localhost и GitHub Raw. При выключенном сервере
+Модуль и пакет загрузились с GitHub Pages, GitHub Raw и localhost. При выключенном сервере
 ошибка обработана. Скриншоты сделаны в браузере по сохранённому выводу реальных
 запусков от 11.09.2026; исходные логи находятся в `results/*.txt`.
 
