@@ -1,160 +1,85 @@
-# Лабораторная работа 1. Удалённый импорт
+# ЛР-1. Удалённый импорт
 
-Автор: Игорь Калинин.
+Игорь Калинин.
 
-Сделал импорт модуля по HTTP через `requests`, обработку недоступного
-сервера (*) и загрузку пакета (***).
+Сделал импорт через `requests`, обработку недоступного сервера (*)
+и загрузку пакета (***). Файлы размещены на
+[GitHub Pages](https://nerdysnake6.github.io/Prog-5/Лр-1/rootserver/).
 
-Основной хостинг — [GitHub Pages](https://nerdysnake6.github.io/Prog-5/Лр-1/rootserver/).
-Модуль и пакет доступны по публичному HTTPS-адресу.
+## 1. Импорт модуля
 
-## Файлы
-
-- `activation_script.py` — `url_hook`, `URLFinder` и `URLLoader`.
-- `rootserver/myremotemodule.py` — модуль с функцией `myfoo()`.
-- `rootserver/mypackage/` — пакет с относительным импортом из `helpers.py`.
-- `demo.py` — запуск проверок.
-- `results/` — сохранённый вывод запусков и HTML для его просмотра.
-- `screenshots/` — скриншоты страниц с этим выводом.
-
-## 1. Удалённый импорт и requests
-
-Команды ниже выполняются из папки `Лр-1`. Сначала установить зависимость:
+В папке `Лр-1` установить зависимость и запустить Python:
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 python3 -m pip install -r requirements.txt
-```
-
-### Проверка с GitHub Pages
-
-Локальный сервер запускать не нужно:
-
-```bash
-python3 demo.py https://nerdysnake6.github.io/Prog-5/Лр-1/rootserver
-```
-
-Для ручной проверки запустить `python3 -i activation_script.py` и вводить
-команды по очереди:
-
-```python
-import myremotemodule  # ModuleNotFoundError: URL ещё не добавлен
-sys.path.append("https://nerdysnake6.github.io/Prog-5/Лр-1/rootserver")
-import myremotemodule
-myremotemodule.myfoo()
-import mypackage
-print(mypackage.hello())
-```
-
-Файлы публикуются из ветки `main`, из корня репозитория. Файл `.nojekyll`
-нужен, чтобы GitHub Pages отдавал исходные файлы, включая `__init__.py`.
-В каталоге `rootserver` есть страница со ссылками на модуль и файлы пакета.
-
-Проверка прошла: модуль, пакет и его подмодуль загружены именно с
-`nerdysnake6.github.io`. Вывод сохранён в `results/pages.txt`.
-
-![Импорт с GitHub Pages](screenshots/pages.png)
-
-### Локальная проверка из задания
-
-В первом терминале запустить сервер:
-
-```bash
-python3 -m http.server 8000 --bind 127.0.0.1 --directory rootserver
-```
-
-Во втором терминале, тоже из `Лр-1`:
-
-```bash
-source .venv/bin/activate
 python3 -i activation_script.py
 ```
 
-Затем вводить команды по очереди:
+Вводить команды по очереди:
 
 ```python
-import myremotemodule  # ModuleNotFoundError: URL ещё не добавлен
-sys.path.append("http://localhost:8000")
+import myremotemodule  # Пока будет ModuleNotFoundError
+sys.path.append("https://nerdysnake6.github.io/Prog-5/Лр-1/rootserver")
 import myremotemodule
 myremotemodule.myfoo()
 ```
 
-После добавления адреса выводится `Игорь Калинин's module is imported`.
-Ту же проверку вместе с импортом пакета можно выполнить одной командой:
+Результат: `Игорь Калинин's module is imported`.
+Локальный сервер для GitHub Pages не нужен.
+
+![Импорт с GitHub Pages](screenshots/pages.png)
+
+Для локальной проверки запустить в отдельном терминале из папки `Лр-1`:
 
 ```bash
-python3 demo.py http://localhost:8000
+python3 -m http.server 8765 --bind 127.0.0.1 --directory rootserver
 ```
 
-![Локальный импорт](screenshots/local.png)
+Затем открыть новый `python3 -i activation_script.py` и повторить команды,
+заменив адрес GitHub Pages на `http://localhost:8765`.
 
-В `sys.path_hooks` добавлена функция `url_hook`. Для HTTP-адреса она создаёт
-`URLFinder`, который ищет файл модуля. `URLLoader` получает исходный код через
-`requests.get()` и выполняет его через `compile()` и `exec()`.
-
-В качестве другого хостинга использовал GitHub Raw. Код лежит в этом же
-репозитории. Локальный сервер для этой проверки не нужен:
-
-```bash
-python3 demo.py https://raw.githubusercontent.com/NerdySnake6/Prog-5/main/Лр-1/rootserver
-```
-
-![Импорт с GitHub Raw](screenshots/github.png)
-
-GitHub Raw не показывает список файлов каталога, поэтому вместо разбора HTML
-поисковик проверяет прямые адреса `имя/__init__.py` и `имя.py`.
-Ответ 404 для файла означает, что надо попробовать следующий вариант.
-В `url_hook` ответы 400 и 404 для самого каталога разрешены.
+![Локальная проверка](screenshots/local.png)
 
 ## 2. Недоступный сервер (*)
 
-Остановить сервер в первом терминале через Ctrl+C и запустить новый процесс:
+Остановить локальный сервер через Ctrl+C. В новом
+`python3 -i activation_script.py` выполнить:
 
-```bash
-python3 demo.py http://localhost:8000 --unavailable
+```python
+sys.path.append("http://localhost:8765")
+try:
+    import myremotemodule
+except ImportError:
+    print("Ошибка импорта обработана")
 ```
 
-![Недоступный сервер](screenshots/unavailable.png)
+После последней строки нажать Enter ещё раз. Появится сообщение
+`Сервер недоступен`, затем `Ошибка импорта обработана`.
+У запросов задан `timeout=5`, сетевые ошибки перехватываются.
+Новый процесс нужен, чтобы Python не взял модуль из памяти.
 
-У запросов задан `timeout=5`. Ошибки подключения, тайм-ауты и ошибки HTTP
-обрабатываются через `requests.RequestException`. Хук сообщает, что сервер
-недоступен, и выбрасывает `ImportError`. Python пробует другие пути и в итоге
-выдаёт `ModuleNotFoundError`, который перехватывает демонстрационный скрипт.
-Ошибки при поиске или загрузке файла также преобразуются в `ImportError`.
+![Проверка ошибки](screenshots/unavailable.png)
 
-Для повторной проверки нужен новый процесс: уже импортированный модуль
-сохраняется в `sys.modules` и повторный `import` может не обращаться к серверу.
+## 3. Импорт пакета (***)
 
-## 3. Загрузка пакета (***)
-
-В интерактивном режиме после добавления URL GitHub Pages:
+После добавления адреса GitHub Pages выполнить:
 
 ```python
 import mypackage
 print(mypackage.hello())
-print(mypackage.__path__)
 ```
 
-Результат — `Пакет и его подмодуль загружены по HTTP`.
-Это также проверяется в `demo.py` при загрузке с любого из указанных хостингов.
+Результат: `Пакет и его подмодуль загружены по HTTP`.
+Это видно на скриншотах успешного импорта.
 
-Для `__init__.py` в `spec_from_loader` передаётся `is_package=True`.
-В `spec.submodule_search_locations` записывается URL каталога пакета.
-Он становится `mypackage.__path__`, поэтому относительный импорт
-`from .helpers import hello` ищет `helpers.py` в этом удалённом каталоге.
-Для подмодуля используется последняя часть имени: `helpers`, а не
-`mypackage.helpers`. Реализованы обычные пакеты с `__init__.py`.
+Весь механизм находится в `activation_script.py`: `url_hook` распознаёт
+HTTP-адрес, `URLFinder` ищет `имя/__init__.py` или `имя.py`, а `URLLoader`
+скачивает и выполняет код. Ответ 404 означает, что такого файла нет.
+Для пакета задаются `is_package=True` и URL в `submodule_search_locations`.
+По нему Python находит подмодуль при `from .helpers import hello`.
 
-## Результат
-
-Модуль и пакет загрузились с GitHub Pages, GitHub Raw и localhost. При выключенном сервере
-ошибка обработана. Скриншоты сделаны в браузере по сохранённому выводу реальных
-запусков от 11.09.2026; исходные логи находятся в `results/*.txt`.
-
-Загруженный Python-код выполняется в текущем процессе, поэтому для проверки
-используются собственные файлы.
-
-Материалы: [задание](https://gist.github.com/nzhukov/919cd2864a4828f65625fb3f5cea7cec),
-[importlib](https://docs.python.org/3/library/importlib.html),
-[requests](https://requests.readthedocs.io/en/latest/user/quickstart/).
+Все три проверки пройдены. Скриншоты показывают вывод реальных интерактивных
+запусков от 11.09.2026. Файл `.nojekyll` в корне репозитория позволяет
+GitHub Pages публиковать `__init__.py`.

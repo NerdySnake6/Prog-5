@@ -1,4 +1,4 @@
-"""Подключить импорт Python-модулей и пакетов по HTTP через requests."""
+"""Подключить удалённый импорт модулей и пакетов через requests."""
 
 import sys
 from importlib.abc import Loader, PathEntryFinder
@@ -6,52 +6,46 @@ from importlib.util import spec_from_loader
 
 import requests
 
-TIMEOUT = 5
-
 
 class URLLoader(Loader):
-    """Загрузить и выполнить исходный код модуля по URL."""
+    """Скачать и выполнить код модуля."""
+
+    def __init__(self, url):
+        """Скачать исходный код один раз."""
+        response = requests.get(url, timeout=5)
+        response.raise_for_status()
+        self.source = response.content
 
     def create_module(self, spec):
-        """Поручить создание модуля самому Python."""
+        """Поручить создание модуля Python."""
         return None
 
     def exec_module(self, module):
-        """Скачать код и выполнить его в пространстве имён модуля."""
-        url = module.__spec__.origin
-        try:
-            response = requests.get(url, timeout=TIMEOUT)
-            response.raise_for_status()
-        except requests.RequestException as error:
-            raise ImportError(f"Не удалось загрузить модуль: {url}") from error
-        module.__file__ = url
-        code = compile(response.content, url, "exec")
-        exec(code, module.__dict__)
+        """Выполнить код внутри модуля."""
+        module.__file__ = module.__spec__.origin
+        exec(compile(self.source, module.__file__, "exec"), module.__dict__)
 
 
 class URLFinder(PathEntryFinder):
-    """Найти обычный модуль или пакет в удалённом каталоге."""
+    """Найти модуль или пакет по URL."""
 
     def __init__(self, url):
         """Запомнить адрес каталога."""
         self.url = url.rstrip("/")
 
     def find_spec(self, fullname, target=None):
-        """Проверить наличие пакета, затем обычного файла модуля."""
+        """Попробовать загрузить пакет, затем обычный модуль."""
         name = fullname.rsplit(".", 1)[-1]
         for suffix, is_package in (("/__init__.py", True), (".py", False)):
-            origin = f"{self.url}/{name}{suffix}"
+            url = f"{self.url}/{name}{suffix}"
             try:
-                response = requests.get(origin, timeout=TIMEOUT)
-                if response.status_code == 404:
-                    continue
-                response.raise_for_status()
+                loader = URLLoader(url)
             except requests.RequestException as error:
-                raise ImportError(
-                    f"Не удалось обратиться к серверу: {origin}"
-                ) from error
+                if error.response is not None and error.response.status_code == 404:
+                    continue
+                raise ImportError(f"Не удалось загрузить {url}") from error
             spec = spec_from_loader(
-                fullname, URLLoader(), origin=origin, is_package=is_package
+                fullname, loader, origin=url, is_package=is_package
             )
             if is_package:
                 spec.submodule_search_locations = [f"{self.url}/{name}"]
@@ -60,20 +54,19 @@ class URLFinder(PathEntryFinder):
 
 
 def url_hook(path):
-    """Обработать HTTP-адрес из sys.path и вернуть поисковик модулей."""
+    """Обработать HTTP-адрес из sys.path."""
     if not isinstance(path, str) or not path.startswith(("http://", "https://")):
         raise ImportError
     try:
-        response = requests.get(path, timeout=TIMEOUT)
-        # GitHub Raw не отдаёт список каталога, но отдаёт отдельные файлы.
-        if response.status_code not in (400, 404):
+        response = requests.get(path, timeout=5)
+        # На Pages у каталога пакета может не быть страницы index.html.
+        if response.status_code != 404:
             response.raise_for_status()
     except requests.RequestException as error:
         print(f"Сервер недоступен: {path}", file=sys.stderr)
-        raise ImportError(f"Не удалось открыть {path}") from error
+        raise ImportError(path) from error
     return URLFinder(path)
 
 
-if url_hook not in sys.path_hooks:
-    sys.path_hooks.append(url_hook)
-    sys.path_importer_cache.clear()
+sys.path_hooks.append(url_hook)
+sys.path_importer_cache.clear()
