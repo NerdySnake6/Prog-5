@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nerdysnake6-openweather"
+version = "0.1.0"
+description = "Простой клиент текущей погоды OpenWeather для лабораторной работы"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{name = "Игорь Калинин"}]
+dependencies = ["requests>=2.28,<3"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Operating System :: OS Independent",
+    "Topic :: Internet :: WWW/HTTP",
+]
+
+[project.urls]
+Source = "https://github.com/NerdySnake6/Prog-5/tree/main/%D0%BB%D1%80_2"
+
+[tool.setuptools.packages.find]
+where = ["src"]
